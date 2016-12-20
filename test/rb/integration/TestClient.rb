@@ -50,7 +50,7 @@ ARGV.each do|a|
 end
 ARGV=[]
 
-class SimpleClientTest < Test::Unit::TestCase
+class BaseClientTest < Test::Unit::TestCase
   def setup 
     unless @socket
       @socket   = Thrift::Socket.new($host, $port)
@@ -78,6 +78,9 @@ class SimpleClientTest < Test::Unit::TestCase
     end
   end
   
+end
+
+class SimpleClientTest < BaseClientTest
   def test_void
     p 'test_void'
     @client.testVoid()
@@ -312,3 +315,21 @@ class SimpleClientTest < Test::Unit::TestCase
 
 end
 
+class CorruptedClient < BaseClientTest
+  def test_corrupted_client
+    begin
+      @client.testEnum(Thrift::Test::Numberz::EIGHT)
+      assert false, 'Should have raised Thrift::ApplicationException'
+    rescue Thrift::ApplicationException
+    end
+    # this triggers THRIFT-3781 which corrupts clients - the next call and
+    # future calls raise Thrift::ProtocolException because the client is
+    # corrupted
+    begin
+      @client.testEnum(Thrift::Test::Numberz::EIGHT)
+      assert false, 'Should have raised Thrift::ApplicationException'
+    rescue Thrift::ApplicationException
+    end
+  end
+
+end
